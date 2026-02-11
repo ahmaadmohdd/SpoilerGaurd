@@ -1,0 +1,23 @@
+1
+00:00:01,000 --> 00:00:04,000
+Peter, you're drunk again.
+
+2
+00:00:04,500 --> 00:00:07,000
+No I'm not, Lois. I'm just...
+
+3
+00:00:07,500 --> 00:00:10,000
+...resting my eyes while standing up.
+
+4
+00:00:12,000 --> 00:00:15,000
+Dad got fired from the toy factory today.
+
+5
+00:00:15,500 --> 00:00:18,000
+That's terrible! What happened?
+
+6
+00:00:18,500 --> 00:00:22,000
+He was drinking on the job again.

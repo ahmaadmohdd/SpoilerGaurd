@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: hsl(222, 47%, 11%);
+      --foreground: hsl(210, 40%, 98%);
+      --card: hsl(222, 47%, 13%);
+      --secondary: hsl(217, 33%, 17%);
+      --primary: hsl(217, 91%, 60%);
+      --primary-foreground: hsl(222, 47%, 11%);
+      --muted: hsl(217, 33%, 17%);
+      --muted-foreground: hsl(215, 20%, 65%);
+      --destructive: hsl(0, 63%, 31%);
+      --border: hsl(217, 33%, 20%);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--background);
+      color: var(--foreground);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; letter-spacing: -0.02em; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    .app {
+      display: flex;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* ============ LEFT CONTENT SIDEBAR (overlay) ============ */
+    .content-sidebar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100%;
+      z-index: 50;
+      background: var(--background);
+      border-right: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+    }
+    .content-sidebar.open {
+      transform: translateX(0);
+    }
+
+    .cs-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 16px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .cs-header-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 12px rgba(59,130,246,0.2);
+      flex-shrink: 0;
+    }
+    .cs-header-icon svg { width: 20px; height: 20px; }
+    .cs-header-title { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 16px; color: #fff; white-space: nowrap; }
+    .cs-header-subtitle { font-size: 11px; color: rgba(147,197,253,0.6); white-space: nowrap; }
+    .cs-close-btn {
+      margin-left: auto;
+      width: 28px; height: 28px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .cs-close-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .cs-close-btn svg { width: 14px; height: 14px; }
+
+    .cs-body {
+      flex: 1; overflow-y: auto; padding: 12px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+
+    /* Universe selector (only shows if >1 universe) */
+    .cs-universe-section { display: none; }
+    .cs-universe-section.visible { display: block; }
+    .cs-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--muted-foreground);
+      margin-bottom: 6px;
+    }
+    .cs-label svg { width: 12px; height: 12px; }
+
+    .cs-universe-btn {
+      width: 100%;
+      padding: 8px 10px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: all 0.15s;
+    }
+    .cs-universe-btn:hover { background: rgba(255,255,255,0.05); }
+    .cs-universe-btn svg { width: 12px; height: 12px; opacity: 0.5; flex-shrink: 0; }
+    .cs-universe-dropdown {
+      display: none;
+      margin-top: 4px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .cs-universe-dropdown.open { display: block; }
+    .cs-universe-opt {
+      width: 100%;
+      padding: 7px 10px;
+      background: none; border: none;
+      color: var(--muted-foreground);
+      font-size: 12px; font-family: inherit;
+      cursor: pointer; text-align: left;
+      display: flex; align-items: center; gap: 6px;
+      transition: all 0.1s;
+    }
+    .cs-universe-opt:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .cs-universe-opt.active { color: var(--primary); }
+    .cs-universe-opt .check-icon { width: 12px; height: 12px; flex-shrink: 0; opacity: 0; }
+    .cs-universe-opt.active .check-icon { opacity: 1; }
+
+    /* Now Playing */
+    .cs-now-playing {
+      display: none;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(74,222,128,0.2);
+      background: rgba(22,101,52,0.1);
+    }
+    .cs-now-playing.visible { display: block; }
+    .cs-np-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 10px; color: var(--muted-foreground);
+      margin-bottom: 6px;
+    }
+    .cs-np-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #4ade80;
+      animation: npPulse 2s ease-in-out infinite;
+    }
+    @keyframes npPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .cs-np-title { font-size: 13px; font-weight: 500; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cs-np-matched { font-size: 10px; color: rgba(74,222,128,0.6); margin-top: 4px; }
+
+    /* Search bar */
+    .cs-search {
+      position: relative;
+      margin-bottom: 4px;
+    }
+    .cs-search svg {
+      position: absolute;
+      left: 10px; top: 50%; transform: translateY(-50%);
+      width: 12px; height: 12px;
+      color: var(--muted-foreground);
+      pointer-events: none;
+    }
+    .cs-search input {
+      width: 100%;
+      padding: 7px 10px 7px 30px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .cs-search input::placeholder { color: var(--muted-foreground); }
+    .cs-search input:focus { border-color: rgba(59,130,246,0.3); }
+    .cs-search-clear {
+      position: absolute;
+      right: 6px; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px;
+      background: rgba(255,255,255,0.1);
+      border: none; border-radius: 50%;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      display: none; align-items: center; justify-content: center;
+      font-size: 12px; line-height: 1;
+    }
+    .cs-search-clear.visible { display: flex; }
+    .cs-search-clear:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+    /* Knowledge Base header */
+    .cs-kb-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cs-reload {
+      width: 22px; height: 22px;
+      background: transparent; border: none; color: var(--muted-foreground);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; transition: all 0.2s;
+    }
+    .cs-reload:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .cs-reload.spinning svg { animation: spin 1s linear infinite; }
+    .cs-reload svg { width: 12px; height: 12px; }
+    @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+    /* Content list */
+    .cs-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px; margin-top: 4px;
+    }
+    .cs-section-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--muted-foreground);
+    }
+    .cs-section-label svg { width: 12px; height: 12px; }
+    .cs-select-all {
+      background: none; border: none;
+      font-size: 10px; color: var(--primary);
+      cursor: pointer; font-family: inherit;
+      padding: 2px 6px; border-radius: 4px;
+      transition: all 0.15s;
+    }
+    .cs-select-all:hover { background: rgba(59,130,246,0.1); }
+
+    .cs-item {
+      width: 100%;
+      text-align: left;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted-foreground);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .cs-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .cs-item.enabled {
+      color: #fff;
+    }
+    .cs-item.selected {
+      background: rgba(59,130,246,0.1);
+      color: var(--primary);
+      border-color: rgba(59,130,246,0.2);
+    }
+    .cs-item-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .cs-item-info { flex: 1; min-width: 0; }
+    .cs-item-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cs-item-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 8px rgba(59,130,246,0.5);
+      flex-shrink: 0;
+    }
+    .cs-item-meta {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 10px; color: var(--muted-foreground);
+      margin-top: 2px;
+    }
+    .cs-item-meta svg { width: 10px; height: 10px; }
+
+    /* Toggle switch */
+    .toggle-track {
+      position: relative;
+      width: 32px; height: 18px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle-track.on {
+      background: var(--primary);
+    }
+    .toggle-thumb {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .toggle-track.on .toggle-thumb {
+      transform: translateX(14px);
+    }
+
+    .cs-series-header {
+      width: 100%;
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 6px;
+      background: transparent; border: none;
+      color: var(--muted-foreground);
+      font-size: 11px; font-family: inherit;
+      cursor: pointer; transition: color 0.15s;
+    }
+    .cs-series-header:hover { color: #fff; }
+    .cs-series-header svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .cs-series-header .ep-count { font-size: 10px; opacity: 0.5; }
+    .cs-season-header {
+      width: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 8px;
+      background: transparent; border: none;
+      color: var(--muted-foreground);
+      font-size: 11px; font-family: inherit;
+      cursor: pointer; transition: all 0.15s;
+      border-radius: 6px;
+      margin-top: 2px;
+    }
+    .cs-season-header:hover { color: #fff; background: rgba(255,255,255,0.03); }
+    .cs-season-header-left { display: flex; align-items: center; gap: 5px; }
+    .cs-season-header-left svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .cs-season-header .ep-count { font-size: 10px; opacity: 0.5; }
+    .cs-season-select-all {
+      background: none; border: none;
+      font-size: 9px; color: var(--primary);
+      cursor: pointer; font-family: inherit;
+      padding: 2px 5px; border-radius: 4px;
+      transition: all 0.15s;
+      opacity: 0; pointer-events: none;
+    }
+    .cs-season-header:hover .cs-season-select-all { opacity: 1; pointer-events: auto; }
+    .cs-season-select-all:hover { background: rgba(59,130,246,0.1); }
+    .cs-episodes { padding-left: 6px; }
+    .cs-empty { text-align: center; font-size: 12px; color: var(--muted-foreground); padding: 16px 0; }
+
+    /* Sort toggle */
+    .cs-sort-toggle {
+      display: none;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .cs-sort-toggle.visible {
+      display: flex;
+    }
+    .cs-sort-btn {
+      flex: 1;
+      padding: 5px 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: var(--muted-foreground);
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cs-sort-btn:hover { background: rgba(255,255,255,0.08); }
+    .cs-sort-btn.active {
+      background: rgba(59,130,246,0.15);
+      color: #60a5fa;
+      border-color: rgba(59,130,246,0.3);
+    }
+
+    /* ============ CHAT PANEL (full width, below overlay) ============ */
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      position: relative;
+    }
+    .chat-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%;
+      height: 300px;
+      background: linear-gradient(to bottom, rgba(30, 58, 138, 0.2), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Chat header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.15);
+      backdrop-filter: blur(20px);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .header-toggle {
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .header-toggle:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .header-toggle.active { background: rgba(59,130,246,0.15); color: #60a5fa; border-color: rgba(59,130,246,0.3); }
+    .header-toggle svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .header-info { flex: 1; min-width: 0; }
+    .header-title { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 16px; color: #fff; }
+    .header-context {
+      font-size: 11px; color: var(--muted-foreground);
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 2px;
+    }
+    .header-context svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .header-context .badge {
+      background: rgba(59,130,246,0.15); color: #60a5fa;
+      padding: 2px 8px; border-radius: 5px; font-weight: 600; font-size: 10px;
+      border: 1px solid rgba(59,130,246,0.2);
+    }
+
+    /* Site badge */
+    .site-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .site-disney { background: #0072d2; color: #fff; }
+    .site-netflix { background: #e50914; color: #fff; }
+    .site-generic { background: rgba(255,255,255,0.1); color: var(--muted-foreground); }
+
+    /* Messages area */
+    .messages {
+      flex: 1; overflow-y: auto;
+      padding: 24px 16px;
+      display: flex; flex-direction: column; gap: 24px;
+      position: relative; z-index: 1;
+    }
+    .message { display: flex; gap: 14px; max-width: 100%; animation: fadeIn 0.4s ease-out; }
+    .message.user-msg { flex-direction: row-reverse; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .message-avatar {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .message-avatar.bot { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+    .message-avatar.user { background: linear-gradient(135deg, #a855f7, #ec4899); }
+    .message-avatar svg { width: 20px; height: 20px; }
+
+    .message-bubble {
+      flex: 1; border-radius: 16px; padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15); min-width: 0;
+    }
+    .message-bubble.bot-bubble { background: var(--card); border: 1px solid rgba(255,255,255,0.1); }
+    .message-bubble.user-bubble { background: var(--secondary); border: 1px solid rgba(255,255,255,0.05); }
+    .message-content { line-height: 1.75; word-wrap: break-word; white-space: pre-wrap; font-size: 13px; }
+
+    .message-bubble.spoiler-bubble { background: rgba(127,29,29,0.1); border: 1px solid rgba(127,29,29,0.2); }
+    .spoiler-inner { display: flex; flex-direction: column; gap: 16px; }
+    .spoiler-header { display: flex; align-items: center; gap: 12px; }
+    .spoiler-header svg { width: 20px; height: 20px; color: #f87171; flex-shrink: 0; }
+    .spoiler-header span { font-weight: 600; color: #fecaca; font-size: 14px; }
+    .spoiler-text { color: var(--muted-foreground); font-size: 13px; line-height: 1.6; }
+    .reveal-btn {
+      align-self: flex-start; display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(239,68,68,0.2); color: #fecaca;
+      border: 1px solid rgba(239,68,68,0.3); border-radius: 8px;
+      padding: 8px 16px; font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
+    }
+    .reveal-btn:hover { background: rgba(239,68,68,0.3); }
+    .reveal-btn svg { width: 16px; height: 16px; }
+
+    .loading-skeleton {
+      display: flex; gap: 14px; max-width: 100%;
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .loading-skeleton .skel-avatar { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.05); flex-shrink: 0; }
+    .loading-skeleton .skel-body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
+    .loading-skeleton .skel-line { height: 14px; background: rgba(255,255,255,0.05); border-radius: 6px; }
+    .loading-skeleton .skel-line:nth-child(1) { width: 25%; }
+    .loading-skeleton .skel-line:nth-child(2) { width: 50%; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    /* Input area */
+    .input-area {
+      padding: 12px 16px;
+      background: linear-gradient(to top, var(--background), rgba(17,24,39,0.95), transparent);
+      flex-shrink: 0; position: relative; z-index: 1;
+    }
+    .input-wrapper { position: relative; }
+    .input-glow {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, rgba(59,130,246,0.2), rgba(6,182,212,0.2));
+      border-radius: 14px; filter: blur(20px);
+      opacity: 0; transition: opacity 0.5s; pointer-events: none;
+    }
+    .input-wrapper:hover .input-glow, .input-wrapper:focus-within .input-glow { opacity: 1; }
+    .input-box {
+      position: relative; display: flex; align-items: center;
+      background: rgba(30,41,59,0.8); backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.25); padding: 6px 6px 6px 16px;
+    }
+    .sparkle-icon {
+      flex-shrink: 0; margin-right: 10px;
+      color: rgba(96,165,250,0.5);
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .sparkle-icon svg { width: 18px; height: 18px; }
+    .input-box input {
+      flex: 1; background: transparent; border: none; color: #fff;
+      font-size: 13px; font-family: inherit; outline: none; padding: 10px 0; min-width: 0;
+    }
+    .input-box input::placeholder { color: var(--muted-foreground); }
+    .send-btn {
+      padding: 10px; border-radius: 10px; border: none; margin-left: 6px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s; flex-shrink: 0;
+    }
+    .send-btn.active {
+      background: var(--primary); color: var(--primary-foreground);
+      box-shadow: 0 4px 12px rgba(59,130,246,0.25);
+    }
+    .send-btn.active:hover { box-shadow: 0 4px 16px rgba(59,130,246,0.4); transform: translateY(-1px); }
+    .send-btn.active:active { transform: translateY(0); }
+    .send-btn.disabled { background: var(--muted); color: var(--muted-foreground); opacity: 0.5; cursor: not-allowed; }
+    .send-btn svg { width: 18px; height: 18px; }
+    .disclaimer { text-align: center; font-size: 10px; color: var(--muted-foreground); margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: Content Sidebar -->
+    <aside class="content-sidebar" id="content-sidebar">
+      <div class="cs-header">
+        <div class="cs-header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+            <line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/>
+            <line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="22" y2="17"/>
+          </svg>
+        </div>
+        <div style="overflow:hidden; flex:1;">
+          <div class="cs-header-title">SpoilerGuard</div>
+          <div class="cs-header-subtitle">Streaming Companion</div>
+        </div>
+        <button class="cs-close-btn" id="cs-close-btn" title="Close panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="cs-body">
+        <!-- Universe selector (hidden if only 1) -->
+        <div class="cs-universe-section" id="universe-section">
+          <div class="cs-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Universe</span>
+          </div>
+          <button class="cs-universe-btn" id="universe-btn">
+            <span id="universe-btn-text">Select...</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="cs-universe-dropdown" id="universe-dropdown"></div>
+        </div>
+
+        <!-- Now Playing -->
+        <div class="cs-now-playing" id="now-playing">
+          <div class="cs-np-label">
+            <div class="cs-np-dot"></div>
+            <span>Now Playing</span>
+          </div>
+          <div class="cs-np-title" id="np-title"></div>
+          <div class="cs-np-matched" id="np-matched"></div>
+        </div>
+
+        <!-- Knowledge Base -->
+        <div>
+          <div class="cs-kb-header">
+            <div class="cs-label" style="margin-bottom:0;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span>Knowledge Base</span>
+            </div>
+            <button class="cs-reload" id="reload-btn" title="Reload knowledge base">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="cs-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="content-search" type="text" placeholder="Search movies & series..." autocomplete="off" />
+          <button class="cs-search-clear" id="search-clear">&times;</button>
+        </div>
+
+        <!-- Sort toggle (Marvel only) -->
+        <div class="cs-sort-toggle" id="sort-toggle">
+          <button class="cs-sort-btn active" data-sort="release">Release Date</button>
+          <button class="cs-sort-btn" data-sort="chrono">Chronological</button>
+        </div>
+
+        <!-- Content items -->
+        <div id="content-list"></div>
+      </div>
+    </aside>
+
+    <!-- RIGHT: Chat Panel -->
+    <div class="chat-panel">
+      <!-- Chat Header -->
+      <div class="header">
+        <button class="header-toggle" id="panel-toggle" title="Browse movies & series">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+            <line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/>
+            <line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="22" y2="17"/>
+          </svg>
+        </button>
+        <div class="header-info">
+          <div class="header-title">Chat</div>
+          <div class="header-context" id="context-bar">
+            <span id="context-text">Detecting content...</span>
+          </div>
+        </div>
+        <span class="site-badge site-generic" id="site-badge">--</span>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages" id="messages"></div>
+
+      <!-- Input -->
+      <div class="input-area">
+        <div class="input-wrapper">
+          <div class="input-glow"></div>
+          <div class="input-box">
+            <div class="sparkle-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+              </svg>
+            </div>
+            <input id="chat-input" type="text" placeholder="Ask a question about the episode..." autocomplete="off" />
+            <button class="send-btn disabled" id="send-btn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="disclaimer">AI can make mistakes. Please verify important information.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="sidebar.js"></script>
+</body>
+</html>
