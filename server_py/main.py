@@ -15,7 +15,7 @@ ALLOWED_ORIGIN_PATTERNS = [
     re.compile(r"^chrome-extension://"),
 ]
 
-SE_PATTERN = re.compile(r'S(\d+)E(\d+)', re.IGNORECASE)
+SE_PATTERN = re.compile(r'S(\d+)E(\d+)|(\d+)x(\d+)', re.IGNORECASE)
 YEAR_PATTERN = re.compile(r'(\d{4})')
 
 
@@ -29,6 +29,13 @@ def _read_file(filepath: str) -> str:
             continue
     with open(filepath, "r", encoding="utf-8", errors="replace") as f:
         return f.read()
+
+
+def _extract_se(match) -> tuple[int, int]:
+    """Extract (season, episode) from an SE_PATTERN match (S01E01 or 1x01)."""
+    if match.group(1) is not None:
+        return int(match.group(1)), int(match.group(2))
+    return int(match.group(3)), int(match.group(4))
 
 
 def _make_title(filename: str) -> str:
@@ -85,7 +92,8 @@ async def seed_data():
             elif entry.lower().endswith('.srt'):
                 se_match = SE_PATTERN.search(entry)
                 if se_match:
-                    flat_series.append((full, entry, int(se_match.group(1)), int(se_match.group(2))))
+                    s, e = _extract_se(se_match)
+                    flat_series.append((full, entry, s, e))
                 else:
                     year_match = YEAR_PATTERN.search(entry)
                     year = int(year_match.group(1)) if year_match else 0
@@ -143,14 +151,21 @@ async def seed_data():
         for folder_name, folder_path in series_folders:
             series_title = folder_name.replace("_", " ")
             content_id = f"{universe_slug}_{_slugify(folder_name)}"
-            srt_files = sorted([
-                f for f in os.listdir(folder_path) if f.lower().endswith('.srt')
-            ])
-            for filename in srt_files:
-                filepath = os.path.join(folder_path, filename)
+            # Collect SRTs from this folder AND any nested subfolders (season dirs)
+            all_srt_files = []
+            for f in sorted(os.listdir(folder_path)):
+                full = os.path.join(folder_path, f)
+                if f.lower().endswith('.srt'):
+                    all_srt_files.append((full, f))
+                elif os.path.isdir(full) and not f.startswith('.'):
+                    # Nested subfolder (e.g. "Daredevil_season 1")
+                    for sf in sorted(os.listdir(full)):
+                        if sf.lower().endswith('.srt'):
+                            all_srt_files.append((os.path.join(full, sf), sf))
+            for filepath, filename in all_srt_files:
                 se_match = SE_PATTERN.search(filename)
                 if se_match:
-                    s, e = int(se_match.group(1)), int(se_match.group(2))
+                    s, e = _extract_se(se_match)
                 else:
                     s, e = 1, 1
                 title = _make_title(filename)

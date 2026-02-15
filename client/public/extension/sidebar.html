@@ -254,6 +254,7 @@
       transition: all 0.15s;
       display: block;
       margin-bottom: 2px;
+      overflow: hidden;
     }
     .cs-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
     .cs-item.enabled {
@@ -269,6 +270,21 @@
     }
     .cs-item-info { flex: 1; min-width: 0; }
     .cs-item-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cs-title-text { display: inline-block; white-space: nowrap; }
+    .cs-item:hover .cs-item-title { text-overflow: clip; }
+    .cs-item.overflows:hover .cs-item-info { overflow: visible; position: relative; z-index: 2; }
+    .cs-item.overflows:hover .cs-item-title { overflow: visible; }
+    .cs-item.overflows:hover .cs-title-text {
+      animation: slideTitle var(--slide-duration, 3s) linear 0.4s infinite;
+    }
+    @keyframes slideTitle {
+      0%, 10% { transform: translateX(0); opacity: 1; }
+      47% { transform: translateX(var(--slide-out)); opacity: 1; }
+      47.5% { transform: translateX(var(--slide-out)); opacity: 0; }
+      48.5% { transform: translateX(var(--slide-in)); opacity: 0; }
+      49% { transform: translateX(var(--slide-in)); opacity: 1; }
+      90%, 100% { transform: translateX(0); opacity: 1; }
+    }
     .cs-item-dot {
       width: 6px; height: 6px; border-radius: 50%;
       background: var(--primary);
