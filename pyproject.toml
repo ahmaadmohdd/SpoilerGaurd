@@ -1,7 +1,9 @@
 [project]
-name = "chatbot-core"
+name = "SpoilerGaurd"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Chrome extension that acts as a spoiler-aware chatbot companion for streaming services. 
+It uses RAG (Retrieval-Augmented Generation) to answer questions about what you're watching without revealing 
+future plot points based on your current timestamp."
 requires-python = ">=3.11"
 dependencies = [
     "asyncpg>=0.31.0",
